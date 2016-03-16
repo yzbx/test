@@ -9,12 +9,23 @@ QT       += core
 QT       -= gui
 
 TARGET = qtFeatureBgsTest
-CONFIG   += console
+CONFIG   += console c++11
 CONFIG   -= app_bundle
 
 TEMPLATE = app
 
-cvroot=/mnt/hgfs/D/git
-include($$cvroot/scripts/opencv_qt.pro)
-include($$cvroot/scripts/bgs_qt.pro)
-SOURCES += main.cpp
+cvroot=/home/yzbx/git/yzbxLib
+include($$cvroot/scripts/opencv_qt_e420.pro)
+include($$cvroot/scripts/bgs_qt_e420.pro)
+
+message ($$bgsroot/debug/libbgs.so)
+LIBS +=$$bgsroot/debug/libbgs.so
+
+INCLUDEPATH +=$$bgsroot/package_bgs
+
+SOURCES += main.cpp \
+    yzbx_tracking.cpp
+
+HEADERS += \
+    yzbx_tracking.h \
+AdaptiveBackgroundLearning.h

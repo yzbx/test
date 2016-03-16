@@ -17,11 +17,6 @@ void yzbx_tracking::process(vector<KeyPoint> &keypoints2, Mat &descriptors2){
     frameNum++;
 }
 
-yzbx_tracking::track_vector_t *yzbx_tracking::newTrackvector(){
-    track_vector_t *vector=new track_vector_t;
-
-}
-
 void yzbx_tracking::init(vector<KeyPoint> &keypoints2, Mat &descriptors2)
 {
     img_rows=descriptors2.rows;
@@ -75,7 +70,7 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
         newFeature[trainIdx2]=false;
 
         track_node *node;
-        node=&(trackTree[queryIdx1]);
+        node=(trackTree[queryIdx1]);
         node->frequency +=1;
         node->lastAppearTime =frameNum;
 
@@ -110,14 +105,14 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
 
     for(int i=0;i<keypoints1.size();i++){
         if(missedFeature[i]&&newTree.size()<=maxTrackNodeNum){
-            track_node *node=&(trackTree[i]);
+            track_node *node=(trackTree[i]);
             node->missTime +=1;
 
             newTree.push_back(node);
         }
     }
 
-    trackTree.swap(&newTree);
+    trackTree.swap(newTree);
 //    newTree.clear();
 
     //3. recreate descriptors1 and keypoints1
@@ -126,7 +121,7 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
     vector<KeyPoint> newKeyPoints;
     for(int i=0;i<trackTree.size();i++){
         track_node *node;
-        node=&(trackTree[i]);
+        node=(trackTree[i]);
 
         int idx=node->keyPointIndex;
         if(idx>=0){
@@ -134,16 +129,18 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
             newKeyPoints.push_back(keypoints1[idx]);
             for(int j=0;j<img_cols;j++){
                 switch (img_type) {
-                case CV_8UC3:
+                case CV_8UC3:{
                     //FIXME need update the descriptors!
                     //opencv can assign Vec3b directly!
                     Vec3b newB=descriptors1.at<Vec3b>(i,j);
                     newDescriptors.at<Vec3b>(i,j)=newB;
                     break;
-                default:
+                }
+                default:{
                     cout<<"unexpected img type"<<endl;
                     CV_Assert(false);
                     break;
+                }
                 }
             }
         }
@@ -153,17 +150,21 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
             newKeyPoints.push_back(keypoints2[idx]);
             for(int j=0;j<img_cols;j++){
                 switch (img_type) {
-                case CV_8UC3:
+                case CV_8UC3:{
                     Vec3b newB=descriptors2.at<Vec3b>(i,j);
                     newDescriptors.at<Vec3b>(i,j)=newB;
                     break;
-                default:
+                }
+                default:{
+                    cout<<"unexpected img type"<<endl;
+                    CV_Assert(false);
                     break;
+                }
                 }
             }
         }
     }
-    keypoints1.swap(&newKeyPoints);
+    keypoints1.swap(newKeyPoints);
     descriptors1=newDescriptors;
 
     //4. refresh tree's keyPointIndex
@@ -194,7 +195,7 @@ void yzbx_tracking::showTrajectory(Mat &img){
         track_node *node=trackTree[i];
         list<Point2f>* list=&(node->trackList);
 
-        for(auto j=list->begin();j!=list->end();j++){
+        for(std::list<Point2f>::iterator j=list->begin();j!=list->end();j++){
             pt2=*j;
         }
 

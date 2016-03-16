@@ -1,20 +1,21 @@
 #include <QCoreApplication>
-#include "IBGS.h"
-#include "AdaptiveBackgroundLearning.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
 #include <stdio.h>
 #include "opencv2/features2d/features2d.hpp"
-//#include "opencv2/nonfree/nonfree.hpp"
+#include "opencv2/nonfree/nonfree.hpp"
 #include <iostream>
 #include <QDir>
+#include "IBGS.h"
+#include "AdaptiveBackgroundLearning.h"
 #include "yzbx_tracking.h"
 //TODO install opencv_contrib, then use the daisy feature.
 //#include "xfeatures2d.hpp"
 using namespace std;
 using namespace cv;
 
+#define E420 1
 //BUG unexpected, maybe the bug of qmake in windows10!
 //I will try the ubuntu and look the result.
 //NOTE maybe cannot change build type from the left down corner of Qt Creator.
@@ -26,14 +27,21 @@ int main(int argc, char *argv[])
 
     /* Background Subtraction Methods */
     IBGS *bgs;
-    bgs=new AdaptiveBackgroundLearning;
+    bgs=new AdaptiveBackgroundLearning();
 
     QDir qdir(".");
     qdir.mkdir("config");
 #ifdef WIN
     VideoCapture cap("D:\\git\\tracking\\data.avi");
 #else
+
+#ifdef E420
+    VideoCapture cap("/home/yzbx/git/video.avi");
+#else
+    //VM ware
     VideoCapture cap("/mnt/hgfs/D/git/tracking/data.avi");
+#endif
+
 #endif
     if(!cap.isOpened())
     {
