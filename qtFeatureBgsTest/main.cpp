@@ -55,6 +55,7 @@ int main(int argc, char *argv[])
     yzbx_tracking* ytrack;
     ytrack=new yzbx_tracking;
 
+    size_t featureThreshold=10000;
     while(key!='q')
     {
         num++;
@@ -92,10 +93,42 @@ int main(int argc, char *argv[])
         cvtColor(input,input_gray,CV_RGB2GRAY);
 
         if(!input_pre_gray.empty()){
-            SurfFeatureDetector detector(10000);
+            size_t featureNum=0;
             vector<KeyPoint> keypoints1, keypoints2;
-            detector.detect(input_gray, keypoints1);
-            detector.detect(input_pre_gray, keypoints2);
+            featureThreshold=10000;
+            while(featureThreshold>1000&&featureNum<10){
+                if(!keypoints1.empty ()){
+                    keypoints1.clear ();
+                }
+                SurfFeatureDetector detector(featureThreshold);
+                detector.detect(input_gray, keypoints1);
+                featureNum=keypoints1.size ();
+                featureThreshold=featureThreshold-1000;
+
+                if(featureNum>=10)
+                    detector.detect(input_pre_gray, keypoints2);
+            }
+
+            if(featureNum<10){
+                featureThreshold=1000;
+                while(featureThreshold>100&&featureNum<10){
+                    if(!keypoints1.empty ()){
+                        keypoints1.clear ();
+                    }
+                    SurfFeatureDetector detector(featureThreshold);
+                    detector.detect(input_gray, keypoints1);
+                    featureNum=keypoints1.size ();
+                    featureThreshold=featureThreshold-100;
+
+                    if(featureNum>=10){
+                        SurfFeatureDetector newDetector(featureThreshold*5);
+                        newDetector.detect(input_pre_gray, keypoints2);
+                    }
+                }
+            }
+
+            cout<<"featureThreshold="<<featureThreshold<<endl;
+            CV_Assert(featureNum>=10);
 
             SurfDescriptorExtractor extractor;
             Mat descriptors1, descriptors2;
@@ -103,31 +136,68 @@ int main(int argc, char *argv[])
             extractor.compute(input_gray, keypoints1, descriptors1);
             extractor.compute(input_pre_gray, keypoints2, descriptors2);
             cout<<"descriptors' mat size="<<descriptors1.size()<<","<<descriptors2.size()<<endl;
+            cout<<"mat col="<<descriptors1.cols<<" mat row="<<descriptors1.rows<<endl;
             cout<<"descriptors's mat type="<<descriptors1.type()<<endl;
 
             //NOTE match(query,train);
-            BFMatcher matcher(NORM_L2);
+            /*L1Dist,L2Dist,HammingDist*/
+
+            //method 1: match twice
+            BFMatcher matcher(NORM_L2,true);
+            //method 2: match less points set to big points set.
+           //give up
+
             vector<DMatch> matches;
             matcher.match(descriptors1, descriptors2, matches);
+
 
 
             Mat img_matches;
             drawMatches(input_gray, keypoints1, input_pre_gray, keypoints2, matches, img_matches);
             imshow("matches", img_matches);
 
-            ytrack->process(keypoints2,descriptors2);
-            ytrack->showTrajectory(input);
+            if(!keypoints1.empty ()){
+                ytrack->process(keypoints1,descriptors1,input_gray,input_pre_gray);
+                ytrack->showTrajectory(input);
+            }
         }
         else{
-            SurfFeatureDetector detector(10000);
+            size_t featureNum=0;
             vector<KeyPoint> keypoints1;
-            detector.detect(input_gray, keypoints1);
+            featureThreshold=10000;
+            while(featureThreshold>1000&&featureNum<10){
+                if(!keypoints1.empty ()){
+                    keypoints1.clear ();
+                }
+                SurfFeatureDetector detector(featureThreshold);
+                detector.detect(input_gray, keypoints1);
+                featureNum=keypoints1.size ();
+                featureThreshold=featureThreshold-1000;
+            }
 
-            SurfDescriptorExtractor extractor;
-            Mat descriptors1;
+            if(featureNum<10){
+                featureThreshold=1000;
+                while(featureThreshold>100&&featureNum<10){
+                    if(!keypoints1.empty ()){
+                        keypoints1.clear ();
+                    }
+                    SurfFeatureDetector detector(featureThreshold);
+                    detector.detect(input_gray, keypoints1);
+                    featureNum=keypoints1.size ();
+                    featureThreshold=featureThreshold-100;
+                }
+            }
 
-            extractor.compute(input_gray, keypoints1, descriptors1);
-            ytrack->process(keypoints1,descriptors1);
+            CV_Assert(featureNum>=10);
+
+            if(!keypoints1.empty ()){
+                SurfDescriptorExtractor extractor;
+                Mat descriptors1;
+
+                extractor.compute(input_gray, keypoints1, descriptors1);
+                ytrack->process(keypoints1,descriptors1);
+            }
+
         }
 
         input_pre_gray=input_gray;

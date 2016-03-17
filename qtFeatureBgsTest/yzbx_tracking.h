@@ -29,7 +29,7 @@ class yzbx_tracking
     typedef std::vector<track_node *> track_tree_t;
 public:
     yzbx_tracking();
-    void process(vector<KeyPoint> &keypoints2,Mat &descriptors2);
+    void process(vector<KeyPoint> &keypoints2,Mat &descriptors2,Mat input_gray=Mat(),Mat input_pre_gray=Mat());
 //    void showMatch(Mat &img1,vector<KeyPoint> &keyP1,Mat &img2, \
 //                   vector<KeyPoint> &keyP2, vector<DMatch> &matches);
     void showTrajectory(Mat &img);
@@ -43,7 +43,7 @@ private:
     track_node *newTrackNode();
 
     void init(vector<KeyPoint> &keypoints2,Mat &descriptors2);
-    void update(vector<KeyPoint> &keypoints2,Mat &descriptors2);
+    void update(vector<KeyPoint> &keypoints2, Mat &descriptors2, Mat input_gray=Mat(), Mat input_pre_gray=Mat());
 
     vector<KeyPoint> keypoints1;
     Mat descriptors1;

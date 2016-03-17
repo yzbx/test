@@ -5,13 +5,18 @@ yzbx_tracking::yzbx_tracking()
 
 }
 
-void yzbx_tracking::process(vector<KeyPoint> &keypoints2, Mat &descriptors2){
+void yzbx_tracking::process(vector<KeyPoint> &keypoints2, Mat &descriptors2,Mat input_gray,Mat input_pre_gray){
+    //Note no feature will give up process.
+    if(keypoints2.empty ()){
+        return;
+    }
+
     if(firstTime){
         init(keypoints2,descriptors2);
         firstTime=false;
     }
     else{
-        update(keypoints2,descriptors2);
+        update(keypoints2,descriptors2,input_gray,input_pre_gray);
     }
 
     frameNum++;
@@ -22,6 +27,7 @@ void yzbx_tracking::init(vector<KeyPoint> &keypoints2, Mat &descriptors2)
     img_rows=descriptors2.rows;
     img_cols=descriptors2.cols;
     img_size=descriptors2.size();
+    img_type=descriptors2.type ();
 
 
     for(int i=0;i<keypoints2.size();i++){
@@ -42,12 +48,24 @@ void yzbx_tracking::init(vector<KeyPoint> &keypoints2, Mat &descriptors2)
 
 }
 
-void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
+void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2,Mat input_gray,Mat input_pre_gray)
 {
     //match feature point
     BFMatcher matcher(NORM_L2);
     vector<DMatch> matches;
     matcher.match(descriptors1, descriptors2, matches);
+
+    if( (!input_gray.empty()) && (!input_pre_gray.empty()) ){
+        Mat img_matches;
+        drawMatches(input_gray, keypoints1, input_pre_gray, keypoints2, matches, img_matches);
+        imshow("tracking matches", img_matches);
+
+        //reverse match
+        vector<DMatch> rmatches;
+        matcher.match (descriptors2,descriptors1,rmatches);
+        drawMatches(input_pre_gray, keypoints2,input_gray, keypoints1, rmatches, img_matches);
+        imshow("tracking reverse matches", img_matches);
+    }
 
     //NOTE match(query,train);
     vector<bool> missedFeature;
@@ -80,6 +98,28 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
         //set position x,y
         Point2f pt=keypoints2[trainIdx2].pt;
         list->push_back(pt);
+        //NOTE update descriptors
+        for(int j=0;j<img_cols;j++){
+            switch (img_type) {
+            case CV_8UC3:{
+                //opencv can assign Vec3b directly!
+                Vec3b newB=descriptors2.at<Vec3b>(trainIdx2,j);
+                descriptors1.at<Vec3b>(queryIdx1,j)=newB;
+                break;
+            }
+            case CV_32FC1:{
+                float newB=descriptors2.at<float>(trainIdx2,j);
+                descriptors1.at<float>(queryIdx1,j)=newB;
+                break;
+            }
+            default:{
+                cout<<"unexpected img type"<<endl;
+                CV_Assert(false);
+                break;
+            }
+            }
+        }
+
 
         newTree.push_back(node);
     }
@@ -131,9 +171,15 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
                 switch (img_type) {
                 case CV_8UC3:{
                     //FIXME need update the descriptors!
+
                     //opencv can assign Vec3b directly!
                     Vec3b newB=descriptors1.at<Vec3b>(i,j);
                     newDescriptors.at<Vec3b>(i,j)=newB;
+                    break;
+                }
+                case CV_32FC1:{
+                    float newB=descriptors1.at<float>(i,j);
+                    newDescriptors.at<float>(i,j)=newB;
                     break;
                 }
                 default:{
@@ -153,6 +199,11 @@ void yzbx_tracking::update(vector<KeyPoint> &keypoints2, Mat &descriptors2)
                 case CV_8UC3:{
                     Vec3b newB=descriptors2.at<Vec3b>(i,j);
                     newDescriptors.at<Vec3b>(i,j)=newB;
+                    break;
+                }
+                case CV_32FC1:{
+                    float newB=descriptors2.at<float>(i,j);
+                    newDescriptors.at<float>(i,j)=newB;
                     break;
                 }
                 default:{
@@ -197,14 +248,15 @@ void yzbx_tracking::showTrajectory(Mat &img){
 
         for(std::list<Point2f>::iterator j=list->begin();j!=list->end();j++){
             pt2=*j;
-        }
 
-        if(i>0){
-            cv::line(showImg,pt1,pt2,Scalar(255,0,0),5,8);
-        }
+            if(j!=list->begin ()){
+                cv::line(showImg,pt1,pt2,Scalar(255,0,0),5,8);
+            }
 
-        pt1=pt2;
+            pt1=pt2;
+        }
     }
 
     imshow("trajectory",showImg);
+
 }

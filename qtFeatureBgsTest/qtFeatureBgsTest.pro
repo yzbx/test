@@ -20,7 +20,6 @@ include($$cvroot/scripts/bgs_qt_e420.pro)
 
 message ($$bgsroot/debug/libbgs.so)
 LIBS +=$$bgsroot/debug/libbgs.so
-
 INCLUDEPATH +=$$bgsroot/package_bgs
 
 SOURCES += main.cpp \
@@ -28,4 +27,4 @@ SOURCES += main.cpp \
 
 HEADERS += \
     yzbx_tracking.h \
-AdaptiveBackgroundLearning.h
+#AdaptiveBackgroundLearning.h
