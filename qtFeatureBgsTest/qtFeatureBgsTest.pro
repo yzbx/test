@@ -22,6 +22,7 @@ include($$cvroot/scripts/bgs_qt_e420.pro)
 LIBS +=/usr/lib/x86_64-linux-gnu/libfftw3.so
 
 INCLUDEPATH += $$LBPRoot/LBP \
+../../yzbxLib/cpp/lbp
 
 SOURCES += main.cpp \
 #    yzbx_tracking.cpp \
@@ -30,7 +31,10 @@ SOURCES += main.cpp \
     lbp_bgs.cpp \
     $$LBPRoot/LBP/LBP.cpp \
     npe_bgs.cpp \
-    main_bgs.cpp
+    main_bgs.cpp \
+    shadowremove.cpp \
+    ../../yzbxLib/cpp/lbp/lbp.cpp \
+    ../../yzbxLib/cpp/lbp/histogram.cpp
 
 HEADERS += \
 #    yzbx_tracking.h \
@@ -39,4 +43,7 @@ HEADERS += \
     lbp_bgs.h \
     npe_bgs.h \
     main_bgs.h \
-    bgslibrary.h
+    bgslibrary.h \
+    shadowremove.h \
+    ../../yzbxLib/cpp/lbp/lbp.hpp \
+    ../../yzbxLib/cpp/lbp/histogram.hpp

@@ -224,9 +224,11 @@ void connectedCompoentSplit (Mat &nextFGMask, Mat &labelImg8UC1){
 main_bgs::main_bgs()
 {
 //    lbpBgs=new lbp_bgs;
-    lbpBgs = new LOBSTERBGS;
+//    lbpBgs = new LOBSTERBGS;
+    lbpBgs=new shadowRemove;
     npeBgs=new npe_bgs;
-    originBgs=new FrameDifferenceBGS;
+//    originBgs=new FrameDifferenceBGS;
+    originBgs=new LOBSTERBGS;
 }
 
 main_bgs::~main_bgs (){
@@ -249,8 +251,8 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
         matVector_BGM.push_back (bgm);
         matVector_FG.push_back (fg);
     }
-//    lbpBgs->processWithoutUpdate(img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
-    lbpBgs->process (img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
+    lbpBgs->processWithoutUpdate(img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
+//    lbpBgs->process (img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
     npeBgs->processWithoutUpdate(img_input,matVector_FG[NPE_BGS],matVector_BGM[NPE_BGS]);
     originBgs->process (img_input,matVector_FG[ORG_BGS],matVector_BGM[ORG_BGS]);
     CV_Assert(!matVector_FG[LBP_BGS].empty());
@@ -265,6 +267,12 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
         matVector_FG[ORG_BGS]=Scalar::all (0);
     }
     CV_Assert(!matVector_FG[ORG_BGS].empty());
+    //if the False Postive is normal, so it's may better to open the FG.
+    Mat kernel=getStructuringElement (MORPH_ELLIPSE,Size(5,5));
+    for(int i=0;i<matVector_FG.size ();i++){
+        morphologyEx (matVector_FG[i],matVector_FG[i],MORPH_CLOSE,kernel);
+    }
+
 
     vector<Mat> matVector_separatedFG;
     for(int i=0;i<7;i++){
@@ -283,10 +291,14 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
     matVector_separatedFG[5]=matVector_FG[LBP_BGS]&matVector_FG[ORG_BGS]-matVector_separatedFG[3];
     matVector_separatedFG[6]=matVector_FG[ORG_BGS]&matVector_FG[NPE_BGS]-matVector_separatedFG[3];
 
-
-    //convert the separated FG to binary map.
-//    for(int i=0;i<matVector_FG.size ();i++){
-//        threshold (matVector_separatedFG[i],matVector_separatedFG[i],0,1,THRESH_BINARY);
+    //if the False Postive is too big
+    //the location of feature may out of Truth Foreground by the radius of feature. so shrink the FG.
+    //NOTE shrink will keep the separation between FG.
+    //if the False Postive is normal, so it's may better to open the FG.
+    //the effect is not good if shrink them here.
+//    Mat kernel_erode=getStructuringElement (MORPH_ELLIPSE,Size(5,5));
+//    for(int i=0;i<matVector_separatedFG.size ();i++){
+//        erode(matVector_separatedFG[i],matVector_separatedFG[i],kernel_erode);
 //    }
 
      //use connected component anlysis and feature tracking
@@ -299,7 +311,7 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
     Mat mixedMovingStatic;
     mixMS(matVector_MS,mixedMovingStatic);
     img_foreground=mixedMovingStatic>0;
-//    lbpBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
+    lbpBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
     npeBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
     //NOTE: orgBgs cannot be edited and do not have update() funciton.
 
@@ -403,6 +415,13 @@ void main_bgs::getMS(const Mat &labelImg8UC1,Mat &MS){
     minMaxIdx (labelImg8UC1,&minVal,&maxVal);
     size_t blobNum=(size_t)maxVal;
 
+    //NOTE erode the FG when count for point type.
+    //in this way, we can keep the component analysis right.
+    //and remove the affect of feature point radius.
+    Mat kernelFG=labelImg8UC1>0;
+    Mat kernel_erode=getStructuringElement (MORPH_ELLIPSE,Size(10,10));
+    erode(kernelFG,kernelFG,kernel_erode);
+
     //NOTE can I use vec3f ???
     vector<myVec> blobTypeCount;
     for(int i=0;i<blobNum+1;i++){
@@ -456,12 +475,16 @@ void main_bgs::getMS(const Mat &labelImg8UC1,Mat &MS){
         }
 
         int blobIdx=labelImg8UC1.at<uchar>(y,x);
+        uchar isKernelFG=kernelFG.at<uchar>(y,x);
         //0 for background, other for foreground
         if(blobIdx!=0){
             //MOVING_POINT,UNKNOW_POINT,STATIC_POINT belong to 0~2
-            myVec v=(blobTypeCount[blobIdx]);
-            v.a[pointType]+=1;
-            blobTypeCount[blobIdx]=v;
+            //MOVING_POINT need be care to accumulate.
+            if(pointType!=MOVING_POINT||isKernelFG>0){
+                myVec v=(blobTypeCount[blobIdx]);
+                v.a[pointType]+=1;
+                blobTypeCount[blobIdx]=v;
+            }
         }
     }
 
@@ -475,16 +498,30 @@ void main_bgs::getMS(const Mat &labelImg8UC1,Mat &MS){
     for(int i=0;i<blobNum+1;i++){
         myVec v=blobTypeCount[i];
 
-        float ratio=(2*v.a[MOVING_POINT]+v.a[UNKNOW_POINT])/(2*v.a[STATIC_POINT]+v.a[UNKNOW_POINT]+0.1);
-        if(ratio>1){
-            blobType[i]=MOVING_POINT;
+        int blobTypeDecision=BlobTypePreferMoving;
+        if(blobTypeDecision==BlobTypeRatio){
+            float ratio=(2*v.a[MOVING_POINT]+v.a[UNKNOW_POINT])/(2*v.a[STATIC_POINT]+v.a[UNKNOW_POINT]+0.1);
+            if(ratio>1){
+                blobType[i]=MOVING_POINT;
+            }
+            else if(ratio>0.5){
+                blobType[i]=UNKNOW_POINT;
+            }
+            else{
+                //NOTE STATIC_POINT must be 0!!!
+                blobType[i]=STATIC_POINT;
+            }
         }
-        else if(ratio>0.5){
-            blobType[i]=UNKNOW_POINT;
-        }
-        else{
-            //NOTE STATIC_POINT must be 0!!!
-            blobType[i]=STATIC_POINT;
+        else if(blobTypeDecision==BlobTypePreferMoving){
+            if(v.a[MOVING_POINT]>0){
+                blobType[i]=MOVING_POINT;
+            }
+            else if(v.a[STATIC_POINT]>0){
+                blobType[i]=STATIC_POINT;
+            }
+            else{
+                blobType[i]=UNKNOW_POINT;
+            }
         }
     }
 

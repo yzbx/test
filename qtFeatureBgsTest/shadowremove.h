@@ -1,5 +1,6 @@
-#ifndef NPE_BGS_H
-#define NPE_BGS_H
+#ifndef SHADOWREMOVE_H
+#define SHADOWREMOVE_H
+
 #include "IBGS.h"
 #include "yzbx_utility.h"
 
@@ -9,15 +10,16 @@
 using namespace cv;
 using namespace cv;
 
-class npe_bgs : public IBGS
+class shadowRemove : public IBGS
 {
 public:
-    npe_bgs();
-    ~npe_bgs();
+    shadowRemove();
+    ~shadowRemove();
     typedef cv::Vec3b value_t;
     //the size of value_t, for CV8UC1, _value_size=1
     //for CV_8UC3, _value_size=3 ...
-    size_t _value_size=3;
+    //for hsv, count just h,s
+    size_t _value_size=2;
 
     typedef typename std::pair<value_t, size_t> cache_pair_t;
     typedef typename std::list<cache_pair_t>::iterator list_iterator_t;
@@ -49,12 +51,12 @@ private:
    size_t _cache_level_one_size=20;
    size_t _cache_level_two_size=25;
    size_t _cache_one_minFrequency=5;
-   int _cache_hit_distance=50;
+   int _cache_hit_distance=100;
    size_t img_rows,img_cols;
    cv::Size img_size;
 
 
-//npe_bgs kernel function
+//shadowRemove kernel function
    //return true for find.
    //return false for not find.
    //if not hit, do nothing.
@@ -165,4 +167,4 @@ private:
    }
 };
 
-#endif // NPE_BGS_H
+#endif // SHADOWREMOVE_H

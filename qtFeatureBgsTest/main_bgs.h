@@ -3,6 +3,7 @@
 #include "lbp_bgs.h"
 #include "npe_bgs.h"
 #include "bgslibrary.h"
+#include "shadowremove.h"
 #include "IBGS.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -17,6 +18,9 @@
 #define STATIC_POINT 0
 #define UNKNOW_POINT 1
 #define MOVING_POINT 2
+
+#define BlobTypeRatio 0
+#define BlobTypePreferMoving 1
 
 class myVec{
 public:
@@ -45,7 +49,8 @@ public:
 
     //use lbp texture
 //    lbp_bgs *lbpBgs;
-    IBGS *lbpBgs;
+//    IBGS *lbpBgs;
+    shadowRemove *lbpBgs;
     //use non-parametric estmation
     npe_bgs *npeBgs;
     //use origin class from bgslibrary
