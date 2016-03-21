@@ -15,26 +15,26 @@ CONFIG   -= app_bundle
 TEMPLATE = app
 
 cvroot=/home/yzbx/git/yzbxLib
-LBPRoot=/media/yzbx/TOURO/computerVision/LBP_HOG
+LBPRoot=lib/LBP1
 include($$cvroot/scripts/opencv_qt_e420.pro)
 include($$cvroot/scripts/bgs_qt_e420.pro)
 
 LIBS +=/usr/lib/x86_64-linux-gnu/libfftw3.so
 
-INCLUDEPATH += $$LBPRoot/LBP \
-../../yzbxLib/cpp/lbp
+INCLUDEPATH += $$LBPRoot \
+lib/lbp
 
 SOURCES += main.cpp \
 #    yzbx_tracking.cpp \
 #    yzbx_tracking_short.cpp \
     yzbx_utility.cpp \
     lbp_bgs.cpp \
-    $$LBPRoot/LBP/LBP.cpp \
+    $$LBPRoot/LBP.cpp \
     npe_bgs.cpp \
     main_bgs.cpp \
     shadowremove.cpp \
-    ../../yzbxLib/cpp/lbp/lbp.cpp \
-    ../../yzbxLib/cpp/lbp/histogram.cpp
+    lib/lbp/lbp.cpp \
+    lib/lbp/histogram.cpp
 
 HEADERS += \
 #    yzbx_tracking.h \
@@ -45,5 +45,5 @@ HEADERS += \
     main_bgs.h \
     bgslibrary.h \
     shadowremove.h \
-    ../../yzbxLib/cpp/lbp/lbp.hpp \
-    ../../yzbxLib/cpp/lbp/histogram.hpp
+    lib/lbp/lbp.hpp \
+    lib/lbp/histogram.hpp
