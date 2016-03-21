@@ -78,7 +78,7 @@ int main(int argc, char *argv[])
 #endif
 
         if(!img_mask.empty())
-            cv::imshow("Foreground", img_mask);
+            cv::imshow("foreground", img_mask);
         imshow("input",input);
         key=waitKey(30);
     }

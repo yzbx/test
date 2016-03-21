@@ -9,6 +9,7 @@ using namespace lbp;
 #define STATIC_POINT 0
 #define UNKNOW_POINT 1
 #define MOVING_POINT 2
+
 void testlbp(const Mat &img_input);
 
 //NOTE value: the descriptor for LBP, the value in cache list.
@@ -19,6 +20,8 @@ class lbp_bgs : public IBGS
     typedef cv::Vec3b value_t;
     //LBP
     size_t _value_size=3;
+    //0 hamming distance , 1 L1 distance, 2 L2 distance
+    int distance_type=0;
 
     typedef typename std::pair<value_t, size_t> cache_pair_t;
     typedef typename std::list<cache_pair_t>::iterator list_iterator_t;
@@ -44,10 +47,10 @@ private:
    cv::Mat img_roi;
    //store level one and level two cache in different list.
    //the pixel in level one cache is the background model
-   size_t _cache_level_one_size=3;
-   size_t _cache_level_two_size=10;
+   size_t _cache_level_one_size=20;
+   size_t _cache_level_two_size=25;
    size_t _cache_one_minFrequency=5;
-   int _cache_hit_distance=8;
+   int _cache_hit_distance=10;
    size_t img_rows,img_cols;
    cv::Size img_size;
 
@@ -70,10 +73,8 @@ private:
            */
            //FIXME hammin distance
            for(int i=0;i<_value_size;i++){
-//               if(model_value[i]!=input_value[i]){
-//                   distance++;
-//               }
-               distance+=yzbx_hamdist(model_value[i],input_value[i]);
+//               distance+=yzbx_hamdist(model_value[i],input_value[i]);
+               distance+=yzbx_distance (model_value[i],input_value[i],distance_type);
            }
 
            if(distance<=_cache_hit_distance){
@@ -102,10 +103,8 @@ private:
 
            //FIXME hammin distance
            for(int i=0;i<_value_size;i++){
-//               if(model_value[i]!=input_value[i]){
-//                   distance++;
-//               }
-               distance+=yzbx_hamdist(model_value[i],input_value[i]);
+//               distance+=yzbx_hamdist(model_value[i],input_value[i]);
+               distance+=yzbx_distance (model_value[i],input_value[i],distance_type);
            }
 
            if(distance<=_cache_hit_distance){

@@ -44,7 +44,8 @@ public:
     void mixMS(vector<cv::Mat> MovingStatics, Mat &mixedMovingStatic);
 
     //use lbp texture
-    lbp_bgs *lbpBgs;
+//    lbp_bgs *lbpBgs;
+    IBGS *lbpBgs;
     //use non-parametric estmation
     npe_bgs *npeBgs;
     //use origin class from bgslibrary
@@ -56,6 +57,8 @@ public:
     Mat descriptors,descriptors_previous;
     vector<KeyPoint> keyPoints,keyPoints_previous;
     vector<DMatch> matches;
+
+    Mat staticPointMat;
 
     size_t img_cols,img_rows;
     cv::Size img_size;

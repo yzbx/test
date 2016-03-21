@@ -24,3 +24,18 @@ unsigned yzbx_d2(unsigned x,unsigned y){
     if(x>y) return (x-y)*(x-y);
     else return (y-x)*(y-x);
 }
+
+unsigned yzbx_distance (unsigned x, unsigned y, int distance_type){
+    CV_Assert(distance_type<=2&&distance_type>=0);
+    if(distance_type==0) return yzbx_hamdist (x,y);
+    if(distance_type==1) return yzbx_d1 (x,y);
+    if(distance_type==2) return yzbx_d2(x,y);
+}
+
+void showImgInLoop (const cv::Mat img, int i){
+    stringstream ss;
+    ss<<i;
+    string name;
+    ss>>name;
+    cv::imshow (name,img);
+}

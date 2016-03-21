@@ -223,7 +223,8 @@ void connectedCompoentSplit (Mat &nextFGMask, Mat &labelImg8UC1){
 
 main_bgs::main_bgs()
 {
-    lbpBgs=new lbp_bgs;
+//    lbpBgs=new lbp_bgs;
+    lbpBgs = new LOBSTERBGS;
     npeBgs=new npe_bgs;
     originBgs=new FrameDifferenceBGS;
 }
@@ -248,34 +249,61 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
         matVector_BGM.push_back (bgm);
         matVector_FG.push_back (fg);
     }
-    lbpBgs->processWithoutUpdate(img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
+//    lbpBgs->processWithoutUpdate(img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
+    lbpBgs->process (img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
     npeBgs->processWithoutUpdate(img_input,matVector_FG[NPE_BGS],matVector_BGM[NPE_BGS]);
     originBgs->process (img_input,matVector_FG[ORG_BGS],matVector_BGM[ORG_BGS]);
+    CV_Assert(!matVector_FG[LBP_BGS].empty());
+    CV_Assert(!matVector_FG[NPE_BGS].empty());
+
+    //NOTE debug
+    imshow("LBP_BGS",matVector_FG[LBP_BGS]);
+    imshow("NPE_BGS",matVector_FG[NPE_BGS]);
+
+    if(matVector_FG[ORG_BGS].empty()){
+        matVector_FG[ORG_BGS].create(img_input.size(),CV_8UC1);
+        matVector_FG[ORG_BGS]=Scalar::all (0);
+    }
+    CV_Assert(!matVector_FG[ORG_BGS].empty());
 
     vector<Mat> matVector_separatedFG;
-    for(int i=0;i<4;i++){
+    for(int i=0;i<7;i++){
         Mat m,ms;
         matVector_separatedFG.push_back (m);
         matVector_MS.push_back (ms);
     }
     //strategy: input FG: A,B,C
-    //generate 4 FG which has no common area: A-B,B-A,A&B,C-A-B
+    //generate 5 FG which has no common area: A-B-C,B-A-C,C-A-B,A&B&C,A&B-A&B&C,A&C-A&B&C,B&C-A&B&C
     //idea: split the FG and track them separatly
-    matVector_separatedFG[0]=matVector_FG[LBP_BGS]-matVector_FG[NPE_BGS];
-    matVector_separatedFG[1]=matVector_FG[NPE_BGS]-matVector_FG[LBP_BGS];
-    matVector_separatedFG[2]=matVector_FG[LBP_BGS]&matVector_FG[NPE_BGS];
-    matVector_separatedFG[3]=matVector_FG[ORG_BGS]-matVector_FG[LBP_BGS]-matVector_FG[NPE_BGS];
+    matVector_separatedFG[0]=matVector_FG[LBP_BGS]-matVector_FG[NPE_BGS]-matVector_FG[ORG_BGS];
+    matVector_separatedFG[1]=matVector_FG[NPE_BGS]-matVector_FG[LBP_BGS]-matVector_FG[ORG_BGS];
+    matVector_separatedFG[2]=matVector_FG[ORG_BGS]-matVector_FG[LBP_BGS]-matVector_FG[NPE_BGS];
+    matVector_separatedFG[3]=matVector_FG[LBP_BGS]&matVector_FG[NPE_BGS]&matVector_FG[ORG_BGS];
+    matVector_separatedFG[4]=matVector_FG[LBP_BGS]&matVector_FG[NPE_BGS]-matVector_separatedFG[3];
+    matVector_separatedFG[5]=matVector_FG[LBP_BGS]&matVector_FG[ORG_BGS]-matVector_separatedFG[3];
+    matVector_separatedFG[6]=matVector_FG[ORG_BGS]&matVector_FG[NPE_BGS]-matVector_separatedFG[3];
+
+
+    //convert the separated FG to binary map.
+//    for(int i=0;i<matVector_FG.size ();i++){
+//        threshold (matVector_separatedFG[i],matVector_separatedFG[i],0,1,THRESH_BINARY);
+//    }
 
      //use connected component anlysis and feature tracking
     getMS (img_input,matVector_separatedFG,matVector_MS);
 
+    for(int i=0;i<matVector_MS.size();i++){
+        showImgInLoop (matVector_MS[i]*100,i);
+    }
+
     Mat mixedMovingStatic;
     mixMS(matVector_MS,mixedMovingStatic);
     img_foreground=mixedMovingStatic>0;
-    lbpBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
+//    lbpBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
     npeBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
     //NOTE: orgBgs cannot be edited and do not have update() funciton.
 
+    inited=true;
     //update history information
     frameNum++;
     img_input_gray_previous=img_input_gray;
@@ -300,6 +328,7 @@ void main_bgs::getMS (const Mat &img_input, vector<Mat> &ForeGrounds, vector<Mat
 
     if(inited){
         matches.clear ();
+        //FIXME true or false ?
         BFMatcher matcher(NORM_L2,true);
         matcher.match (descriptors_previous,descriptors,matches);
 
@@ -315,6 +344,13 @@ void main_bgs::getMS (const Mat &img_input, vector<Mat> &ForeGrounds, vector<Mat
             connectedCompoentSplit (ForeGrounds[i],labelImg8UC1);
             //0 static, 1 unknow, 2 moving
             getMS(labelImg8UC1,MovingStatics[i]);
+
+            double maxVal,minVal;
+            minMaxIdx (MovingStatics[i],&minVal,&maxVal);
+            if(maxVal>=3){
+                std::cout<<"maxVal="<<maxVal<<std::endl;
+            }
+            CV_Assert(maxVal<3);
         }
     }
     else{
@@ -323,7 +359,11 @@ void main_bgs::getMS (const Mat &img_input, vector<Mat> &ForeGrounds, vector<Mat
         img_rows=img_input.rows;
         img_size=img_input.size();
         img_type=img_input.type ();
-        inited=true;
+
+        for(int i=0;i<MovingStatics.size ();i++){
+            MovingStatics[i].create(img_size,CV_8UC1);
+            MovingStatics[i]=Scalar::all (0);
+        }
     }
 }
 
@@ -331,17 +371,28 @@ void main_bgs::mixMS (vector<Mat> MovingStatics, Mat &mixedMovingStatic){
     //strategy: input FG: A,B,C
     //generate 4 FG which has no common area: A-B,B-A,A&B,C-A-B
     //idea: split the FG and track them separatly
+    if(inited){
+        CV_Assert(!MovingStatics[0].empty());
+        mixedMovingStatic=MovingStatics[0].clone();
+        for(int i=1;i<MovingStatics.size ();i++){
+            mixedMovingStatic+=MovingStatics[i];
+        }
 
-    CV_Assert(!MovingStatics[0].empty());
-    mixedMovingStatic=MovingStatics[0].clone();
-    for(int i=1;i<MovingStatics.size ();i++){
-        mixedMovingStatic+=MovingStatics[i];
+        //NOTE Check the separated FG
+        double maxVal,minVal;
+        minMaxIdx (mixedMovingStatic,&minVal,&maxVal);
+        if(maxVal>=3){
+            imshow("mixedMovingStatic",mixedMovingStatic);
+            waitKey (0);
+            std::cout<<"maxVal="<<std::endl;
+        }
+        CV_Assert(maxVal<3);
     }
-
-    //NOTE Check the separated FG
-    double maxVal,minVal;
-    minMaxIdx (mixedMovingStatic,&minVal,&maxVal);
-    CV_Assert(maxVal<3);
+    else{
+        mixedMovingStatic.release ();
+        mixedMovingStatic.create (img_size,CV_8UC1);
+        mixedMovingStatic=Scalar::all(0);
+    }
 }
 
 void main_bgs::getMS(const Mat &labelImg8UC1,Mat &MS){
@@ -383,6 +434,27 @@ void main_bgs::getMS(const Mat &labelImg8UC1,Mat &MS){
         else if(speedSquare>speedThresholdLow) pointType=UNKNOW_POINT;
         else pointType=STATIC_POINT;
 
+        //TODO refresh staticPointMat
+        //in each match(P1,P2), if P1 or P2 is a static point, then the match is invalid like two static point matched.
+        if(staticPointMat.empty ()){
+            staticPointMat.create (img_size,CV_8UC1);
+            staticPointMat=Scalar::all (UNKNOW_POINT);
+            if(pointType==STATIC_POINT)
+                staticPointMat.at<uchar>(y,x)=STATIC_POINT;
+        }
+        else{
+            int x_previous=(int)P_previous.x;
+            int y_previous=(int)P_previous.y;
+            CV_Assert(x_previous>=0&&x_previous<img_cols);
+            CV_Assert(y_previous>=0&&y_previous<img_rows);
+            if(staticPointMat.at<uchar>(y,x)==STATIC_POINT||staticPointMat.at<uchar>(y_previous,x_previous)==STATIC_POINT){
+                pointType=STATIC_POINT;
+            }
+            else if(pointType==STATIC_POINT){
+                staticPointMat.at<uchar>(y,x)=STATIC_POINT;
+            }
+        }
+
         int blobIdx=labelImg8UC1.at<uchar>(y,x);
         //0 for background, other for foreground
         if(blobIdx!=0){
@@ -421,10 +493,18 @@ void main_bgs::getMS(const Mat &labelImg8UC1,Mat &MS){
     MS.create (img_size,CV_8UC1);
     for(int i=0;i<img_rows;i++){
         for(int j=0;j<img_cols;j++){
-            char c=labelImg8UC1.at<uchar>(i,j);
+            uchar c=labelImg8UC1.at<uchar>(i,j);
             if(c!=0){
                 //NOTE STATIC_POINT must be 0!!!
-                char ch=(char)blobType[c];
+                uchar ch=(uchar)blobType[c];
+
+                if(ch>=3){
+                    cout<<"ch="<<(int)ch<<endl;
+                    cout<<"blobType[c]="<<blobType[c]<<endl;
+                }
+                CV_Assert(c<blobNum+1);
+                CV_Assert(ch<3);
+
                 MS.at<uchar>(i,j)=ch;
             }
             else{

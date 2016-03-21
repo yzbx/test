@@ -202,6 +202,7 @@ void lbp_bgs::processWithoutUpdate (const Mat &input, Mat &img_output, Mat &img_
     CV_Assert(!input.empty ());
     Mat img_input;
     computeLBP (input,img_input);
+    imshow("lbp_img",img_input);
 
     if(firstTime){
         firstTime=false;
