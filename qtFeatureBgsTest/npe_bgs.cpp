@@ -13,10 +13,18 @@ void npe_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_backg
 
 }
 
-void npe_bgs::processWithoutUpdate (const Mat &img_input, Mat &img_output, Mat &img_background){
+void npe_bgs::processWithoutUpdate (const Mat &input, Mat &img_output, Mat &img_background){
     CV_Assert(!processedWithoutUpdate);
     processedWithoutUpdate=true;
-    CV_Assert(!img_input.empty ());
+//    CV_Assert(!img_input.empty ());
+    CV_Assert(!input.empty ());
+    CV_Assert(input.type ()==CV_8UC3);
+
+    //shadow remove
+    //NOTE : Lab is better than HSV
+    Mat img_input,img_hsv;
+    cvtColor (input,img_hsv,CV_BGR2Lab);
+    img_input=img_hsv;
 
     if(firstTime){
         firstTime=false;
@@ -30,9 +38,10 @@ void npe_bgs::processWithoutUpdate (const Mat &img_input, Mat &img_output, Mat &
                 value_t value;
                 if(img_roi.empty ()){
                     value=img_input.at<value_t>(i,j);
-                    std::list<cache_pair_t> list1,list2;
+//                    std::list<cache_pair_t> list1,list2;
+                    cache_node_t list1,list2;
                     _cache_one_vector.push_back (list1);
-                    list2.push_front (cache_pair_t(value,1));
+                    list2.list.push_front (cache_pair_t(value,1));
                     _cache_two_vector.push_back (list2);
                     position++;
                 }
@@ -40,9 +49,10 @@ void npe_bgs::processWithoutUpdate (const Mat &img_input, Mat &img_output, Mat &
                     //NOTE 0 for out of roi, other for filed of roi.
                     if(img_roi.at<uchar>(i,j)!=0){
                         value=img_input.at<value_t>(i,j);
-                        std::list<cache_pair_t> list1,list2;
+//                        std::list<cache_pair_t> list1,list2;
+                        cache_node_t list1,list2;
                         _cache_one_vector.push_back (list1);
-                        list2.push_front (cache_pair_t(value,1));
+                        list2.list.push_front (cache_pair_t(value,1));
                         _cache_two_vector.push_back (list2);
                         position++;
       //                  img_roi_vector.push_back (cv::Vec2i(i,j));
@@ -87,9 +97,17 @@ void npe_bgs::processWithoutUpdate (const Mat &img_input, Mat &img_output, Mat &
     frameNum++;
 }
 
-void npe_bgs::updateWithMovingStatic (const Mat &img_input,const Mat &MovingStaticMat){
+void npe_bgs::updateWithMovingStatic (const Mat &input,const Mat &MovingStaticMat){
     CV_Assert(processedWithoutUpdate);
     processedWithoutUpdate=false;
+    CV_Assert(!input.empty ());
+    CV_Assert(input.type ()==CV_8UC3);
+
+    //shadow remove
+    //NOTE : Lab is better than HSV
+    Mat img_input,img_hsv;
+    cvtColor (input,img_hsv,CV_BGR2Lab);
+    img_input=img_hsv;
 
     CV_Assert(!MovingStaticMat.empty ());
     CV_Assert(MovingStaticMat.type ()==CV_8UC1);

@@ -5,6 +5,7 @@
 #include "bgslibrary.h"
 #include "shadowremove.h"
 #include "IBGS.h"
+#include "yzbx_config.h"
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/core/core.hpp>
@@ -46,15 +47,21 @@ public:
     void getMS(const cv::Mat &img_input, vector<cv::Mat> &ForeGrounds,vector<cv::Mat> &MovingStatics);
     void getMS(const cv::Mat &labelImg8UC1,cv::Mat &nextMSMask);
     void mixMS(vector<cv::Mat> MovingStatics, Mat &mixedMovingStatic);
+    void lightChangePollutionCheck(vector<cv::Mat> &ForeGrounds);
+    void decideAllKeyPointTypes();
+    void debug();
 
     //use lbp texture
 //    lbp_bgs *lbpBgs;
 //    IBGS *lbpBgs;
     shadowRemove *lbpBgs;
     //use non-parametric estmation
-    npe_bgs *npeBgs;
+    //DEBUG memory error!
+//    npe_bgs *npeBgs;
+    IBGS *npeBgs;
     //use origin class from bgslibrary
     IBGS *originBgs;
+//    lbp_bgs *originBgs;
 
     bool inited=false;
     size_t frameNum=0;
@@ -62,8 +69,14 @@ public:
     Mat descriptors,descriptors_previous;
     vector<KeyPoint> keyPoints,keyPoints_previous;
     vector<DMatch> matches;
+    //both matched keyPoint and unmatched keyPoint
+    //for unmatch keypoint, if not in staticPointMat, then it is unknow.
+    //NOTE for an FG area have no keypoint matched, remove it from FG.
+    vector<int> allKeyPointTypes;
 
-    Mat staticPointMat;
+    //NOTE only staticPointMat is need to update
+    //inited vaue 0, 1 for true.
+    Mat staticPointMat,movingPointMat,unknowPointMat;
 
     size_t img_cols,img_rows;
     cv::Size img_size;

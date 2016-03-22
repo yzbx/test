@@ -34,7 +34,8 @@ SOURCES += main.cpp \
     main_bgs.cpp \
     shadowremove.cpp \
     lib/lbp/lbp.cpp \
-    lib/lbp/histogram.cpp
+    lib/lbp/histogram.cpp \
+    yzbx_frameinput.cpp
 
 HEADERS += \
 #    yzbx_tracking.h \
@@ -46,4 +47,6 @@ HEADERS += \
     bgslibrary.h \
     shadowremove.h \
     lib/lbp/lbp.hpp \
-    lib/lbp/histogram.hpp
+    lib/lbp/histogram.hpp \
+    yzbx_config.h \
+    yzbx_frameinput.h

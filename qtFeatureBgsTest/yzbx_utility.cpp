@@ -52,13 +52,14 @@ void yzbx_imfill(Mat &input){
     size_t img_rows=input.rows,img_cols=input.cols;
     for(x=0;x<img_rows;x++){
         //holes.at<uchar>(x,y)==FLOODED or FG, will not be flooded again or flooded.
+        //NOTE: Mat(x,y) vs Point(y,x)
         y=0;
         if(holes.at<uchar>(x,y)==0){
-            cv::floodFill(holes,cv::Point2i(x,y),cv::Scalar(FLOODED));
+            cv::floodFill(holes,cv::Point2i(y,x),cv::Scalar(FLOODED));
         }
         y=img_cols-1;
         if(holes.at<uchar>(x,y)==0){
-            cv::floodFill(holes,cv::Point2i(x,y),cv::Scalar(FLOODED));
+            cv::floodFill(holes,cv::Point2i(y,x),cv::Scalar(FLOODED));
         }
     }
 
@@ -66,11 +67,11 @@ void yzbx_imfill(Mat &input){
         //holes.at<uchar>(x,y)==FLOODED or FG, will not be flooded again or flooded.
         x=0;
         if(holes.at<uchar>(x,y)==0){
-            cv::floodFill(holes,cv::Point2i(x,y),cv::Scalar(FLOODED));
+            cv::floodFill(holes,cv::Point2i(y,x),cv::Scalar(FLOODED));
         }
         x=img_rows-1;
         if(holes.at<uchar>(x,y)==0){
-            cv::floodFill(holes,cv::Point2i(x,y),cv::Scalar(FLOODED));
+            cv::floodFill(holes,cv::Point2i(y,x),cv::Scalar(FLOODED));
         }
     }
 

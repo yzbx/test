@@ -9,6 +9,24 @@
 using namespace cv;
 using namespace cv;
 
+class npe_bgs_pair{
+public:
+    npe_bgs_pair(){}
+    npe_bgs_pair(cv::Vec3b a,size_t b){
+        first=a;
+        second=b;
+    }
+
+    cv::Vec3b first;
+    size_t second;
+};
+
+class npe_bgs_listNode{
+public:
+    npe_bgs_listNode(){}
+    std::list<npe_bgs_pair> list;
+};
+
 class npe_bgs : public IBGS
 {
 public:
@@ -19,7 +37,11 @@ public:
     //for CV_8UC3, _value_size=3 ...
     size_t _value_size=3;
 
-    typedef typename std::pair<value_t, size_t> cache_pair_t;
+//    typedef typename std::pair<value_t, size_t> cache_pair_t;
+//    typedef typename std::list<cache_pair_t>::iterator list_iterator_t;
+//    typedef typename std::list<cache_pair_t> cache_list_t;
+    typedef npe_bgs_listNode cache_node_t;
+    typedef npe_bgs_pair cache_pair_t;
     typedef typename std::list<cache_pair_t>::iterator list_iterator_t;
     typedef typename std::list<cache_pair_t> cache_list_t;
 public:
@@ -42,7 +64,8 @@ private:
    //for each pixel point, there is a cache list to keep the background model.
 //    std::list<cache_pair_t> _cache_one_list,_cache_two_list;
    //for the whole image, there is a map to keep all the background model of pixel points.
-   std::vector<std::list<cache_pair_t>> _cache_one_vector,_cache_two_vector;
+//   std::vector<std::list<cache_pair_t>> _cache_one_vector,_cache_two_vector;
+   std::vector<cache_node_t> _cache_one_vector,_cache_two_vector;
    cv::Mat img_roi;
    //store level one and level two cache in different list.
    //the pixel in level one cache is the background model
@@ -60,7 +83,10 @@ private:
    //if not hit, do nothing.
    bool findAndAdajustCacheOneList(size_t position,value_t input_value){
        //std::list<key_value_pair_t> _cache_one_list,_cache_two_list;
-       cache_list_t *_cache_one_list=&_cache_one_vector[position];
+//       cache_list_t *_cache_one_list=&_cache_one_vector[position];
+       cache_node_t *node=&(_cache_one_vector[position]);
+       std::list<cache_pair_t> *_cache_one_list=&(node->list);
+
        bool cache_hit=false;
        for(auto it=_cache_one_list->begin();it!=_cache_one_list->end();it++) {
            cache_pair_t pair=*it;
@@ -72,10 +98,6 @@ private:
            */
            //FIXME hammin distance
            for(int i=0;i<_value_size;i++){
-//               if(model_value[i]!=input_value[i]){
-//                   distance++;
-//               }
-//               distance+=yzbx_hamdist(model_value[i],input_value[i]);
                distance+=yzbx_d2 (model_value[i],input_value[i]);
            }
 
@@ -96,7 +118,9 @@ private:
    //if not hit, whether add it to cache one depends the final result.
    bool findAndAdajustCacheTwoList(size_t position,value_t input_value,bool levelUp){
        //std::list<key_value_pair_t> _cache_one_list,_cache_two_list;
-       cache_list_t *_cache_two_list=&_cache_two_vector[position];
+//       cache_list_t *_cache_two_list=&_cache_two_vector[position];
+       cache_node_t *node=&(_cache_two_vector[position]);
+       cache_list_t *_cache_two_list=&(node->list);
        bool cache_hit=false;
        for(auto it=_cache_two_list->begin();it!=_cache_two_list->end();it++) {
            value_t model_value=it->first;
@@ -121,7 +145,9 @@ private:
                    _cache_two_list->erase (it);
 
                    //level up to cache one
-                   cache_list_t* _cache_one_list=&_cache_one_vector[position];
+//                   cache_list_t* _cache_one_list=&_cache_one_vector[position];
+                   cache_node_t* node_one=&(_cache_one_vector[position]);
+                   cache_list_t* _cache_one_list=&(node_one->list);
                    _cache_one_list->push_front (cache_pair_t(model_value,frequcency));
 
                    //keep the size of cache one

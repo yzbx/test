@@ -28,7 +28,7 @@ void shadowRemove::processWithoutUpdate (const Mat &input, Mat &img_output, Mat 
 //    imgs[2]=Mat(img_hsv.size(),CV_8UC1,200);
 //    merge(imgs,3,img_hsv);
 //    cvtColor (img_hsv,img_input,CV_HSV2BGR);
-    imshow("shadow remove",img_input);
+//    imshow("shadow remove",img_input);
 
     if(firstTime){
         firstTime=false;
@@ -42,9 +42,10 @@ void shadowRemove::processWithoutUpdate (const Mat &input, Mat &img_output, Mat 
                 value_t value;
                 if(img_roi.empty ()){
                     value=img_input.at<value_t>(i,j);
-                    std::list<cache_pair_t> list1,list2;
+//                    std::list<cache_pair_t> list1,list2;
+                    cache_node_t list1,list2;
                     _cache_one_vector.push_back (list1);
-                    list2.push_front (cache_pair_t(value,1));
+                    list2.list.push_front (cache_pair_t(value,1));
                     _cache_two_vector.push_back (list2);
                     position++;
                 }
@@ -52,9 +53,10 @@ void shadowRemove::processWithoutUpdate (const Mat &input, Mat &img_output, Mat 
                     //NOTE 0 for out of roi, other for filed of roi.
                     if(img_roi.at<uchar>(i,j)!=0){
                         value=img_input.at<value_t>(i,j);
-                        std::list<cache_pair_t> list1,list2;
+//                        std::list<cache_pair_t> list1,list2;
+                        cache_node_t list1,list2;
                         _cache_one_vector.push_back (list1);
-                        list2.push_front (cache_pair_t(value,1));
+                        list2.list.push_front (cache_pair_t(value,1));
                         _cache_two_vector.push_back (list2);
                         position++;
       //                  img_roi_vector.push_back (cv::Vec2i(i,j));

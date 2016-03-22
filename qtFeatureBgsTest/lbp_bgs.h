@@ -63,7 +63,8 @@ private:
        //std::list<key_value_pair_t> _cache_one_list,_cache_two_list;
        cache_list_t *_cache_one_list=&_cache_one_vector[position];
        bool cache_hit=false;
-       for(auto it=_cache_one_list->begin();it!=_cache_one_list->end();it++) {
+       list_iterator_t it_before;
+       for(list_iterator_t it=_cache_one_list->begin();it!=_cache_one_list->end();it++) {
            cache_pair_t pair=*it;
            value_t model_value=pair.first;
            size_t frequcency=pair.second;
@@ -79,7 +80,11 @@ private:
 
            if(distance<=_cache_hit_distance){
                cache_hit=true;
+               it_before=it;
+               it_before--;
                _cache_one_list->erase (it);
+               it=it_before;
+
                _cache_one_list->push_front (cache_pair_t(model_value,frequcency+1));
                break;
            }
@@ -96,6 +101,7 @@ private:
        //std::list<key_value_pair_t> _cache_one_list,_cache_two_list;
        cache_list_t *_cache_two_list=&_cache_two_vector[position];
        bool cache_hit=false;
+       cache_list_t::iterator it_before;
        for(auto it=_cache_two_list->begin();it!=_cache_two_list->end();it++) {
            value_t model_value=it->first;
            size_t frequcency=it->second;
@@ -113,7 +119,10 @@ private:
 
                if(frequcency>_cache_one_minFrequency&&levelUp){
                    //remove from cache two
+                   it_before=it;
+                   it_before--;
                    _cache_two_list->erase (it);
+                   it=it_before;
 
                    //level up to cache one
                    cache_list_t* _cache_one_list=&_cache_one_vector[position];
@@ -138,7 +147,10 @@ private:
                }
                else{
                    //move to front in cache two and frequency plus one.
+                   it_before=it;
+                   it_before--;
                    _cache_two_list->erase (it);
+                   it=it_before;
                    _cache_two_list->push_front (cache_pair_t(model_value,frequcency));
                }
 

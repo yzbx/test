@@ -5,6 +5,7 @@
 #include <QDir>
 #include "IBGS.h"
 #include "main_bgs.h"
+#include "yzbx_frameinput.h"
 
 //TODO install opencv_contrib, then use the daisy feature.
 //#include "xfeatures2d.hpp"
@@ -27,6 +28,30 @@ int main(int argc, char *argv[])
 
     QDir qdir(".");
     qdir.mkdir("config");
+
+//    yzbx_frameInput yfInput("/media/yzbx/D/firefoxDownload/matlab/dataset2012/dataset/baseline/highway/input",1,-1);
+    yzbx_frameInput yfInput("/media/yzbx/D/firefoxDownload/matlab/dataset2012/dataset/baseline/office/input",1,-1);
+    Mat input,fgMask,bgModel;
+    namedWindow ("input");
+    for(int i=1;i<1000;i++){
+        cout<<"i="<<i<<" *****************"<<endl;
+        yfInput.getNextFrame (input,FromCDNet);
+        bgs->process (input,fgMask,bgModel);
+        if(!input.empty ()){
+            imshow("input",input);
+        }
+        if(!fgMask.empty ()){
+            imshow("fgMask",fgMask);
+        }
+
+        int key=waitKey (30);
+        if(key=='q'){
+            break;
+        }
+    }
+}
+//use video.
+/*
 #ifdef WIN
     VideoCapture cap("D:\\git\\tracking\\data.avi");
 #else
@@ -82,4 +107,4 @@ int main(int argc, char *argv[])
         imshow("input",input);
         key=waitKey(30);
     }
-}
+*/
