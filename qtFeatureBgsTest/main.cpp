@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
     yzbx_CDNetBenchMark benchmark(QString::fromStdString (inputRoot),QString::fromStdString (outputRoot));
 
     CV_Assert(benchmark.InputPathList.size ()==benchmark.OutputPathList.size ());
-    for(int benchmarkNum=0;benchmarkNum<benchmark.InputPathList.size ();benchmarkNum++){
+    for(int benchmarkNum=1;benchmarkNum<benchmark.InputPathList.size ();benchmarkNum++){
         qDebug()<<"input="<<benchmark.InputPathList.at(benchmarkNum);
         qDebug()<<"output="<<benchmark.OutputPathList.at(benchmarkNum);
 
@@ -50,13 +50,15 @@ int main(int argc, char *argv[])
         for(int i=1;;i++){
             cout<<"i="<<i<<" *****************"<<endl;
             yfInput.getNextFrame (input,FromCDNet);
-            bgs->process (input,fgMask,bgModel);
             if(!input.empty ()){
                 imshow("input",input);
             }
             else{
                 break;
             }
+
+            bgs->process (input,fgMask,bgModel);
+
             if(!fgMask.empty ()){
                 imshow("fgMask",fgMask);
                 stringstream ss;
