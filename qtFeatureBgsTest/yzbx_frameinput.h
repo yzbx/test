@@ -3,6 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <iostream>
+#include <QtCore>
 using namespace std;
 using namespace cv;
 

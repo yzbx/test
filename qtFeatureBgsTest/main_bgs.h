@@ -57,14 +57,15 @@ public:
     shadowRemove *lbpBgs;
     //use non-parametric estmation
     //DEBUG memory error!
-//    npe_bgs *npeBgs;
-    IBGS *npeBgs;
+    npe_bgs *npeBgs;
+//    IBGS *npeBgs;
     //use origin class from bgslibrary
     IBGS *originBgs;
 //    lbp_bgs *originBgs;
 
     bool inited=false;
     size_t frameNum=0;
+    Mat img_fgMask_previous;
     Mat img_input_gray_previous,img_input_gray;
     Mat descriptors,descriptors_previous;
     vector<KeyPoint> keyPoints,keyPoints_previous;

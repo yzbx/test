@@ -73,8 +73,8 @@ private:
     cv::Mat img_roi;
     //store level one and level two cache in different list.
     //the pixel in level one cache is the background model
-    size_t _cache_level_one_size=3;
-    size_t _cache_level_two_size=5;
+    size_t _cache_level_one_size=5;
+    size_t _cache_level_two_size=10;
     size_t _cache_one_minFrequency=5;
     int _cache_hit_distance=10;
     size_t img_rows,img_cols;

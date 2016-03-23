@@ -35,7 +35,8 @@ SOURCES += main.cpp \
     shadowremove.cpp \
     lib/lbp/lbp.cpp \
     lib/lbp/histogram.cpp \
-    yzbx_frameinput.cpp
+    yzbx_frameinput.cpp \
+    yzbx_cdnetbenchmark.cpp
 
 HEADERS += \
 #    yzbx_tracking.h \
@@ -49,4 +50,5 @@ HEADERS += \
     lib/lbp/lbp.hpp \
     lib/lbp/histogram.hpp \
     yzbx_config.h \
-    yzbx_frameinput.h
+    yzbx_frameinput.h \
+    yzbx_cdnetbenchmark.h

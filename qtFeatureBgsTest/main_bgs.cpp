@@ -228,8 +228,8 @@ main_bgs::main_bgs()
 //        lbpBgs = new LOBSTERBGS;
 //        lbpBgs = new SuBSENSEBGS;
     lbpBgs=new shadowRemove;
-//    npeBgs=new npe_bgs;
-    npeBgs=new FrameDifferenceBGS;
+    npeBgs=new npe_bgs;
+//    npeBgs=new FrameDifferenceBGS;
     //    originBgs=new FrameDifferenceBGS;
     originBgs=new LOBSTERBGS;
 }
@@ -260,8 +260,8 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
     }
     lbpBgs->processWithoutUpdate(img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
 //        lbpBgs->process (img_input,matVector_FG[LBP_BGS],matVector_BGM[LBP_BGS]);
-//    npeBgs->processWithoutUpdate(img_input,matVector_FG[NPE_BGS],matVector_BGM[NPE_BGS]);
-    npeBgs->process(img_input,matVector_FG[NPE_BGS],matVector_BGM[NPE_BGS]);
+    npeBgs->processWithoutUpdate(img_input,matVector_FG[NPE_BGS],matVector_BGM[NPE_BGS]);
+//    npeBgs->process(img_input,matVector_FG[NPE_BGS],matVector_BGM[NPE_BGS]);
     originBgs->process (img_input,matVector_FG[ORG_BGS],matVector_BGM[ORG_BGS]);
 
     if(matVector_FG[ORG_BGS].empty()){
@@ -301,7 +301,7 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
 //    Mat believableFG(img_input.size(),CV_8UC1);
 //    believableFG=Scalar::all (0);
 
-    int separateStrategy=Generate4FG;
+    int separateStrategy=Generate1FG;
     if(separateStrategy==Generate3FG){
         for(int i=0;i<3;i++){
             Mat m,ms;
@@ -351,9 +351,12 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
     else if(separateStrategy==Generate1FG){
         Mat M=matVector_FG[0]|matVector_FG[1]|matVector_FG[2];
         matVector_separatedFG.push_back (M);
+        Mat ms;
+        matVector_MS.push_back (ms);
     }
 
     //step 5: use connected component anlysis and feature tracking
+    CV_Assert(matVector_separatedFG.size()==matVector_MS.size());
     getMS (img_input,matVector_separatedFG,matVector_MS);
 
     //DEBUG
@@ -368,7 +371,7 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
     //NOTE consider believable as FG
 //    img_foreground|=believableFG;
     lbpBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
-//    npeBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
+    npeBgs->updateWithMovingStatic(img_input,mixedMovingStatic);
     //NOTE: orgBgs cannot be edited and do not have update() funciton.
 
     if(inited) debug();
@@ -381,6 +384,7 @@ void main_bgs::process (const Mat &img_input, Mat &img_foreground, Mat &img_back
     descriptors_previous=descriptors.clone();
     keyPoints_previous.clear ();
     keyPoints_previous.swap (keyPoints);
+    img_fgMask_previous=img_foreground.clone ();
 
     //step 8: memory manage
     for(int i=0;i<matVector_BGM.size();i++){
@@ -421,6 +425,7 @@ void main_bgs::getMS (const Mat &img_input, vector<Mat> &ForeGrounds, vector<Mat
 
     //step 2
     //NOTE filter the background keyPoints after inited.
+    Mat KeyPointMask;
     if(inited){
         Mat dilatedMixFG=ForeGrounds[0].clone();
         for(int i=1;i<ForeGrounds.size ();i++){
@@ -428,6 +433,8 @@ void main_bgs::getMS (const Mat &img_input, vector<Mat> &ForeGrounds, vector<Mat
         }
         Mat dilatedKernel=getStructuringElement (MORPH_RECT,Size(15,15));
         dilate (dilatedMixFG,dilatedMixFG,dilatedKernel);
+        CV_Assert(!img_fgMask_previous.empty ());
+        KeyPointMask=dilatedMixFG|img_fgMask_previous;
 
         //WARNING filter the keypoints out of dilatedMixFG
         vector<KeyPoint>::iterator it,it_before;
@@ -457,10 +464,21 @@ void main_bgs::getMS (const Mat &img_input, vector<Mat> &ForeGrounds, vector<Mat
 
     //step 4: match descriptors  after inited.
     if(inited){
+        //CONFIG: whole img or part img;
+        CV_Assert(!KeyPointMask.empty ());
+        keyPoints_previous.clear ();
+        detector.detect (img_input_gray_previous,keyPoints_previous,KeyPointMask);
+        descriptors_previous.release ();
+        extractor.compute (img_input_gray_previous,keyPoints_previous,descriptors_previous);
+
         matches.clear ();
         //FIXME true or false ?
         BFMatcher matcher(NORM_L2,true);
-        matcher.match (descriptors_previous,descriptors,matches);
+        if(!descriptors_previous.empty ()&&!descriptors.empty ()){
+            CV_Assert(descriptors_previous.type ()==descriptors.type ());
+            CV_Assert(descriptors_previous.cols==descriptors.cols);
+            matcher.match (descriptors_previous,descriptors,matches);
+        }
 
         Mat img_matches;
         drawMatches(img_input_gray_previous, keyPoints_previous, img_input_gray, keyPoints, matches, img_matches);

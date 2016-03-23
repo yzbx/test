@@ -10,7 +10,7 @@ shadowRemove::~shadowRemove (){
 }
 
 void shadowRemove::process (const Mat &img_input, Mat &img_foreground, Mat &img_background){
-
+    CV_Assert(false);
 }
 
 void shadowRemove::processWithoutUpdate (const Mat &input, Mat &img_output, Mat &img_background){

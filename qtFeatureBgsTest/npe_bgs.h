@@ -103,7 +103,11 @@ private:
 
            if(distance<=_cache_hit_distance){
                cache_hit=true;
+               auto it_before=it;
+               it_before--;
                _cache_one_list->erase (it);
+               it=it_before;
+
                _cache_one_list->push_front (cache_pair_t(model_value,frequcency+1));
                break;
            }
@@ -142,7 +146,10 @@ private:
 
                if(frequcency>_cache_one_minFrequency&&levelUp){
                    //remove from cache two
+                   auto it_before=it;
+                   it_before--;
                    _cache_two_list->erase (it);
+                   it=it_before;
 
                    //level up to cache one
 //                   cache_list_t* _cache_one_list=&_cache_one_vector[position];
@@ -160,6 +167,9 @@ private:
                        //keep the size of cache two
                        if(_cache_two_list->size()>_cache_level_two_size){
 //                            _cache_two_list->erase (_cache_two_list->end());
+                           auto listEnd=_cache_two_list->end ();
+                           listEnd--;
+                           if(listEnd==it) it--;
                            _cache_two_list->pop_back ();
                        }
 
@@ -169,7 +179,10 @@ private:
                }
                else{
                    //move to front in cache two and frequency plus one.
+                   auto it_before=it;
+                   it_before--;
                    _cache_two_list->erase (it);
+                   it=it_before;
                    _cache_two_list->push_front (cache_pair_t(model_value,frequcency));
                }
 

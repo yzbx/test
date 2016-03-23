@@ -6,6 +6,8 @@
 #include "IBGS.h"
 #include "main_bgs.h"
 #include "yzbx_frameinput.h"
+#include "yzbx_cdnetbenchmark.h"
+#include <QtCore>
 
 //TODO install opencv_contrib, then use the daisy feature.
 //#include "xfeatures2d.hpp"
@@ -22,33 +24,61 @@ int main(int argc, char *argv[])
     //    return a.exec();
     std::cout << "Using OpenCV " << CV_MAJOR_VERSION << "." << CV_MINOR_VERSION << "." << CV_SUBMINOR_VERSION << std::endl;
 
-    /* Background Subtraction Methods */
-    main_bgs *bgs;
-    bgs=new main_bgs;
-
     QDir qdir(".");
     qdir.mkdir("config");
 
-//    yzbx_frameInput yfInput("/media/yzbx/D/firefoxDownload/matlab/dataset2012/dataset/baseline/highway/input",1,-1);
-    yzbx_frameInput yfInput("/media/yzbx/D/firefoxDownload/matlab/dataset2012/dataset/baseline/office/input",1,-1);
-    Mat input,fgMask,bgModel;
-    namedWindow ("input");
-    for(int i=1;i<1000;i++){
-        cout<<"i="<<i<<" *****************"<<endl;
-        yfInput.getNextFrame (input,FromCDNet);
-        bgs->process (input,fgMask,bgModel);
-        if(!input.empty ()){
-            imshow("input",input);
-        }
-        if(!fgMask.empty ()){
-            imshow("fgMask",fgMask);
-        }
+    string inputRoot="/media/yzbx/D/firefoxDownload/matlab/dataset2012/dataset";
+    string outputRoot="/media/yzbx/D/firefoxDownload/matlab/dataset2012/main_bgs";
+    yzbx_CDNetBenchMark benchmark(QString::fromStdString (inputRoot),QString::fromStdString (outputRoot));
 
-        int key=waitKey (30);
-        if(key=='q'){
-            break;
+    CV_Assert(benchmark.InputPathList.size ()==benchmark.OutputPathList.size ());
+    for(int benchmarkNum=0;benchmarkNum<benchmark.InputPathList.size ();benchmarkNum++){
+        qDebug()<<"input="<<benchmark.InputPathList.at(benchmarkNum);
+        qDebug()<<"output="<<benchmark.OutputPathList.at(benchmarkNum);
+
+        /* Background Subtraction Methods */
+        main_bgs *bgs;
+        bgs=new main_bgs;
+
+        QString qrootin=benchmark.InputPathList.at(benchmarkNum);
+        QString qrootout=benchmark.OutputPathList.at(benchmarkNum);
+        string rootin=qrootin.toStdString ()+"/input";
+        string rootout=qrootout.toStdString ();
+        yzbx_frameInput yfInput(rootin,1,-1);
+        Mat input,fgMask,bgModel;
+        namedWindow ("input");
+        for(int i=1;;i++){
+            cout<<"i="<<i<<" *****************"<<endl;
+            yfInput.getNextFrame (input,FromCDNet);
+            bgs->process (input,fgMask,bgModel);
+            if(!input.empty ()){
+                imshow("input",input);
+            }
+            else{
+                break;
+            }
+            if(!fgMask.empty ()){
+                imshow("fgMask",fgMask);
+                stringstream ss;
+                ss<<i;
+                char cstr[10];
+                sprintf (cstr,"%06d",i);
+                string numstr(cstr);
+
+                string filename=rootout+"/bin"+numstr+".png";
+                cout<<"save img "<<filename<<endl;
+                imwrite (filename,fgMask);
+            }
+
+            int key=waitKey (30);
+            if(key=='q'){
+                break;
+            }
         }
     }
+
+//    yzbx_frameInput yfInput("/media/yzbx/D/firefoxDownload/matlab/dataset2012/dataset/baseline/highway/input",1,-1);
+
 }
 //use video.
 /*

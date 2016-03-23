@@ -38,7 +38,13 @@ void yzbx_frameInput::getNextFrame (Mat &frame, int method){
         string numstr(cstr);
 
         if(frameNum<lastFrameNum||lastFrameNum==-1){
-            frame=imread(rootPath+"/in"+numstr+".jpg");
+            string filename=rootPath+"/in"+numstr+".jpg";
+            QString qfilename=QString::fromStdString (filename);
+            QFile file(qfilename);
+            if(file.exists ())
+                frame=imread(rootPath+"/in"+numstr+".jpg");
+            else
+                frame.release ();
         }
         else{
             cout<<"reach last frame num "<<lastFrameNum<<endl;
